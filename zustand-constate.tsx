@@ -1,91 +1,121 @@
-import create from 'zustand';
-import createContext from 'zustand/context';
-import * as React from 'react';
-import {ReactNode, useLayoutEffect} from 'react';
 import {
-  EqualityChecker,
-  State,
-  StateCreator,
-  StateSelector,
-} from 'zustand/vanilla';
+	createStore as createZustandStore,
+	useStore as useZustandStore,
+} from "zustand";
+import { createContext, useContext, useRef } from "react";
+import React, { type ReactNode, useLayoutEffect } from "react";
+import type { StateCreator, StoreApi } from "zustand/vanilla";
 
 export type LocalUseStore<TState, Props> = TState & {
-  $sync: (props: Props) => void;
+	$sync: (props: Props) => void;
 };
 
-type CreateContextUseStore<StateSlice, TState extends State> = (
-  selector?: StateSelector<TState, StateSlice> | undefined,
-  equalityFn?: EqualityChecker<StateSlice>,
+type CreateContextUseStore<StateSlice, TState extends unknown> = (
+	selector?: (s: TState) => StateSlice | undefined,
+	equalityFn?: (a: TState, b: TState) => boolean,
 ) => StateSlice;
 
-type CreateContextUSeStoreApi<TState, Props> = () => {
-  getState: import("zustand").GetState<LocalUseStore<TState, Props>>;
-  setState: import("zustand").SetState<LocalUseStore<TState, Props>>;
-  subscribe: import("zustand").Subscribe<LocalUseStore<TState, Props>>;
-  destroy: import("zustand").Destroy;
-}
+// type CreateContextUSeStoreApi<TState, Props> = () => {
+// 	getState: import("zustand").StoreApi<TState>["getState"];
+// 	setState: import("zustand").StoreApi<TState>["setState"];
+// 	subscribe: (listener: (state: TState) => void) => void;
+// 	destroy: import("zustand").StoreApi<TState>["destroy"];
+// };
 
 const syncSelector = <TState, Props>(store: LocalUseStore<TState, Props>) =>
-  store.$sync;
+	store.$sync;
 
 export function createZustandConstate<
-  TState extends State,
-  Props extends Record<string, any>
+	TState extends Record<string, any>,
+	Props extends Record<string, any>,
 >(
-  createState?: StateCreator<TState>,
-  useValue?: (
-    props: Props & {useStore: CreateContextUseStore<any, TState>, useStoreApi: CreateContextUSeStoreApi<TState, Props>},
-  ) => any,
+	createState?: StateCreator<TState>,
+	useValue?: (
+		props: Props & {
+			useStore: CreateContextUseStore<any, TState>;
+			useStoreApi: StoreApi<TState>;
+		},
+	) => any,
 ) {
-  const {Provider: ZustandProvider, useStore, useStoreApi} = createContext<
-    LocalUseStore<TState, Props>
-  >();
-  
-  const Hook = (props: Props) => {
-    const sync = useStore(syncSelector);
+	const StoreContext = createContext<LocalUseStore<TState, Props>>(null as any);
 
-    useLayoutEffect(() => {
-      sync(props);
-    }, Object.values(props));
+	const useStoreInContext = (selector) => {
+		const store = useContext<LocalUseStore<TState, Props>>(StoreContext);
+		if (!store) {
+			throw new Error("Missing StoreProvider");
+		}
 
-    if (useValue) {
-      const returned = useValue({...props, useStore, useStoreApi});
+		return useZustandStore(store, selector);
+	};
 
-      useLayoutEffect(() => {
-        if (returned && typeof returned === 'object') sync(returned);
-      }, [returned]);
-    }
+	const Hook = (props: Props) => {
+		const sync = useStoreInContext(syncSelector);
 
-    return null;
-  };
+		// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+		useLayoutEffect(() => {
+			sync(props);
+		}, Object.values(props));
 
-  createState = createState || (() => ({}) as TState);
+		if (useValue) {
+			const returned = useValue({ ...props, useStoreInContext, useStoreApi });
 
-  const createStore = () => {
-    return create<TState>((set, get, api) => ({
-      ...createState!(set, get, api),
-      $sync: (props: Partial<Props>) => set((state) => ({...state, ...props})),
-    }));
-  };
+			// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+			useLayoutEffect(() => {
+				if (returned && typeof returned === "object") sync(returned);
+			}, [returned]);
+		}
 
-  const Provider = (props: Props & {children: ReactNode}) => {
-    const {children, ...propsWithoutChildren} = props;
+		return null;
+	};
 
-    return (
-      // @ts-ignore
-      <ZustandProvider createStore={createStore}>
-        {/* @ts-ignore*/}
-        <Hook {...propsWithoutChildren} />
-        {children}
-      </ZustandProvider>
-    );
-  };
+	createState = createState || (() => ({}) as TState);
 
-  return {
-    Provider,
-    useStore,
-    useStoreApi
-  };
+	// const createStore = () => {
+	// 	return createZustandStore<TState>((set, get, api) => ({
+	// 		...(createState?.(set, get, api) as TState),
+	// 		$sync: (props: Partial<Props>) =>
+	// 			set((state) => ({ ...state, ...props })),
+	// 	}));
+	// };
+
+	const StoreProvider = (props: Props & { children: ReactNode }) => {
+		const { children, ...propsWithoutChildren } = props;
+		const storeRef = useRef<TState>();
+
+		if (!storeRef.current) {
+			storeRef.current = createZustandStore<TState>((set, get, api) => ({
+				...(createState?.(set, get, api) as TState),
+				$sync: (props: Partial<Props>) =>
+					set((state) => ({ ...state, ...props })),
+			}));
+		}
+
+		return (
+			<StoreContext.Provider value={storeRef.current}>
+				<Hook {...propsWithoutChildren} />
+				{children}
+			</StoreContext.Provider>
+		);
+	};
+
+	// const Provider = (props: Props & { children: ReactNode }) => {
+	// 	const { children, ...propsWithoutChildren } = props;
+
+	// 	return (
+	// 		// @ts-ignore
+	// 		<ZustandProvider createStore={createStore}>
+	// 			{/* @ts-ignore*/}
+	// 			<Hook {...propsWithoutChildren} />
+	// 			{children}
+	// 		</ZustandProvider>
+	// 	);
+	// };
+
+	return {
+		StoreProvider,
+		useStoreInContext,
+		useStoreApi,
+	};
 }
 
 export default createZustandConstate;
