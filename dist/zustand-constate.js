@@ -23,15 +23,9 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createZustandConstate = createZustandConstate;
-var zustand_1 = require("zustand");
 var react_1 = require("react");
-var react_2 = require("react");
-// type CreateContextUSeStoreApi<TState, Props> = () => {
-// 	getState: import("zustand").StoreApi<TState>["getState"];
-// 	setState: import("zustand").StoreApi<TState>["setState"];
-// 	subscribe: (listener: (state: TState) => void) => void;
-// 	destroy: import("zustand").StoreApi<TState>["destroy"];
-// };
+var zustand_1 = require("zustand");
+var traditional_1 = require("zustand/traditional");
 var syncSelector = function (store) {
     return store.$sync;
 };
@@ -40,34 +34,29 @@ function createZustandConstate(createState, useValue) {
     var useStoreInContext = function (selector) {
         var store = (0, react_1.useContext)(StoreContext);
         if (!store) {
-            throw new Error("Missing StoreProvider");
+            throw new Error('Missing StoreProvider');
         }
-        return (0, zustand_1.useStore)(store, selector);
+        // @ts-ignore
+        return (0, traditional_1.useStoreWithEqualityFn)(store, selector);
     };
     var Hook = function (props) {
         var sync = useStoreInContext(syncSelector);
-        // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-        (0, react_2.useLayoutEffect)(function () {
+        (0, react_1.useLayoutEffect)(function () {
+            // @ts-ignore
             sync(props);
         }, Object.values(props));
         if (useValue) {
+            // @ts-ignore
             var returned_1 = useValue(__assign(__assign({}, props), { useStoreInContext: useStoreInContext, useStoreApi: useStoreApi }));
-            // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-            (0, react_2.useLayoutEffect)(function () {
-                if (returned_1 && typeof returned_1 === "object")
+            (0, react_1.useLayoutEffect)(function () {
+                // @ts-ignore
+                if (returned_1 && typeof returned_1 === 'object')
                     sync(returned_1);
             }, [returned_1]);
         }
         return null;
     };
     createState = createState || (function () { return ({}); });
-    // const createStore = () => {
-    // 	return createZustandStore<TState>((set, get, api) => ({
-    // 		...(createState?.(set, get, api) as TState),
-    // 		$sync: (props: Partial<Props>) =>
-    // 			set((state) => ({ ...state, ...props })),
-    // 	}));
-    // };
     var StoreProvider = function (props) {
         var children = props.children, propsWithoutChildren = __rest(props, ["children"]);
         var storeRef = (0, react_1.useRef)();
@@ -76,24 +65,15 @@ function createZustandConstate(createState, useValue) {
                     return set(function (state) { return (__assign(__assign({}, state), props)); });
                 } })); });
         }
-        return (react_2.default.createElement(StoreContext.Provider, { value: storeRef.current },
-            react_2.default.createElement(Hook, __assign({}, propsWithoutChildren)),
+        return (
+        // @ts-ignore
+        React.createElement(StoreContext.Provider, { value: storeRef.current },
+            React.createElement(Hook, __assign({}, propsWithoutChildren)),
             children));
     };
-    // const Provider = (props: Props & { children: ReactNode }) => {
-    // 	const { children, ...propsWithoutChildren } = props;
-    // 	return (
-    // 		// @ts-ignore
-    // 		<ZustandProvider createStore={createStore}>
-    // 			{/* @ts-ignore*/}
-    // 			<Hook {...propsWithoutChildren} />
-    // 			{children}
-    // 		</ZustandProvider>
-    // 	);
-    // };
     return {
-        StoreProvider: StoreProvider,
-        useStoreInContext: useStoreInContext,
+        Provider: StoreProvider,
+        useStore: useStoreInContext,
     };
 }
 exports.default = createZustandConstate;

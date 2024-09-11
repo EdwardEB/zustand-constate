@@ -1,35 +1,33 @@
 {
-	"name": "zustand-constate",
-	"version": "1.0.0",
-	"main": "./dist/zustand-constate.js",
-	"types": "./dist/zustand-constate.d.ts",
-	"repository": "https://github.com/ntvinhit/zustand-constate.git",
-	"author": "ntvinh.it@gmail.com <ntvinh.it@gmail.com>",
-	"license": "MIT",
-	"scripts": {
-		"test": "jest",
-		"install": "tsc ./zustand-constate.tsx --declaration --allowJs --jsx react --outDir dist"
-	},
-	"dependencies": {
-		"react": "^18.3.1",
-		"zustand": "^4.5.4"
-	},
-	"devDependencies": {
-		"@babel/preset-env": "^7.25.3",
-		"@babel/preset-react": "^7.24.7",
-		"@babel/preset-typescript": "^7.24.7",
-		"@testing-library/react": "^16.0.0",
-		"@types/jest": "^29.5.12",
-		"@types/react": "^18.3.3",
-		"jest": "^29.7.0",
-		"react-dom": "^18.3.1",
-		"typescript": "^5.5.4"
-	},
-	"jest": {
-		"testEnvironment": "jsdom",
-		"moduleDirectories": [
-			"node_modules"
-		]
-	},
-	"packageManager": "yarn@4.2.2"
+  "name": "zustand-constate",
+  "version": "1.0.0",
+  "main": "./dist/zustand-constate.js",
+  "types": "./dist/zustand-constate.d.ts",
+  "repository": "https://github.com/ntvinhit/zustand-constate.git",
+  "author": "ntvinh.it@gmail.com <ntvinh.it@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "install": "tsc ./zustand-constate.tsx --declaration --allowJs --jsx react --outDir dist"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-react": "^7.24.7",
+    "@babel/preset-typescript": "^7.24.7",
+    "@testing-library/react": "^16.0.1",
+    "@types/jest": "^29.5.12",
+    "@types/react": "^18.3.5",
+    "jest": "^29.7.0",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.2"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "moduleDirectories": ["node_modules"]
+  },
+  "packageManager": "yarn@4.2.2"
 }
